@@ -1,35 +1,33 @@
 local Rayfield = loadstring(game:HttpGet('https://sirius.menu/rayfield'))()
 
 local Window = Rayfield:CreateWindow({
-   Name = "BangBangHub | Ultimate v3",
-   LoadingTitle = "Bypassing Game Protection...",
+   Name = "BangBangHub | Ultimate Bypass v4",
+   LoadingTitle = "Bypassing Security...",
    LoadingSubtitle = "by Gemini 3",
    ConfigurationSaving = { Enabled = false }
 })
 
-local MainTab = Window:CreateTab("Main Farm", 4483362458)
+local MainTab = Window:CreateTab("Auto Farm", 4483362458)
 local Settings = {
     AutoClick = false,
     AutoX2 = false,
-    WalkSpeed = 16
+    SpeedValue = 16
 }
 
--- 1. Auto Click (Thêm lệnh Click chuột ảo)
+-- 1. Auto Click (Thêm cơ chế Tool Equipping)
 MainTab:CreateToggle({
    Name = "Auto Click (Equip Tool)",
    CurrentValue = false,
    Callback = function(Value)
       Settings.AutoClick = Value
       task.spawn(function()
-          local VirtualUser = game:GetService("VirtualUser")
           while Settings.AutoClick do
               pcall(function()
                   local char = game.Players.LocalPlayer.Character
-                  if char and char:FindFirstChildOfClass("Tool") then
-                      char:FindFirstChildOfClass("Tool"):Activate()
+                  local tool = char and char:FindFirstChildOfClass("Tool")
+                  if tool then
+                      tool:Activate()
                   end
-                  -- Giả lập click chuột thật vào giữa màn hình
-                  VirtualUser:Button1Down(Vector2.new(0,0), workspace.CurrentCamera.CFrame)
               end)
               task.wait(0.01)
           end
@@ -37,7 +35,7 @@ MainTab:CreateToggle({
    end,
 })
 
--- 2. Auto Click x2 (Quét theo hình ảnh nút)
+-- 2. Auto x2 (Quét theo ID hình ảnh nút tím)
 MainTab:CreateToggle({
    Name = "Auto Click x2 Popups",
    CurrentValue = false,
@@ -45,56 +43,55 @@ MainTab:CreateToggle({
       Settings.AutoX2 = Value
       task.spawn(function()
           while Settings.AutoX2 do
-              local pGui = game.Players.LocalPlayer:FindFirstChild("PlayerGui")
-              if pGui then
-                  for _, obj in pairs(pGui:GetDescendants()) do
-                      -- Game này nút x2 thường là ImageButton có hình bàn tay
-                      if obj:IsA("ImageButton") and obj.Visible and obj.Image:find("http") then
-                          pcall(function()
-                              -- Nhấn bằng nhiều cách cùng lúc để đảm bảo trúng
-                              obj:Activate()
-                              for _, con in pairs(getconnections(obj.MouseButton1Click)) do con:Fire() end
-                              for _, con in pairs(getconnections(obj.Activated)) do con:Fire() end
-                          end)
+              pcall(function()
+                  local pGui = game.Players.LocalPlayer:WaitForChild("PlayerGui")
+                  for _, v in pairs(pGui:GetDescendants()) do
+                      -- Game này nút x2 thường dùng ID hình ảnh bàn tay/x2 đặc biệt
+                      if v:IsA("ImageButton") and v.Visible and (v.Image:find("rbxassetid") or v.Name:lower():find("x2")) then
+                          if v.AbsoluteSize.X > 0 then
+                              -- Giả lập nhấn trực tiếp vào tọa độ tâm của nút
+                              local x = v.AbsolutePosition.X + (v.AbsoluteSize.X / 2)
+                              local y = v.AbsolutePosition.Y + (v.AbsoluteSize.Y / 2)
+                              game:GetService("VirtualInputManager"):SendMouseButtonEvent(x, y, 0, true, game, 1)
+                              game:GetService("VirtualInputManager"):SendMouseButtonEvent(x, y, 0, false, game, 1)
+                          end
                       end
                   end
-              end
-              task.wait(0.2)
+              end)
+              task.wait(0.1)
           end
       end)
    end,
 })
 
--- 3. Speed Hack (Dùng kỹ thuật ghi đè CFrame nếu WalkSpeed bị chặn)
+-- 3. Speed Hack (Kỹ thuật Velocity - Khó bị chặn nhất)
 local MiscTab = Window:CreateTab("Misc", 4483362458)
 
 MiscTab:CreateSlider({
-   Name = "Speed Multiplier",
-   Range = {1, 10},
-   Increment = 1,
-   CurrentValue = 1,
+   Name = "Custom Speed",
+   Range = {16, 500},
+   Increment = 10,
+   CurrentValue = 16,
    Callback = function(Value)
-      Settings.WalkSpeed = Value
+      Settings.SpeedValue = Value
    end,
 })
 
--- Vòng lặp cưỡng bức di chuyển (CFrame Speed)
-task.spawn(function()
-    local RunService = game:GetService("RunService")
-    RunService.RenderStepped:Connect(function()
-        pcall(function()
-            local char = game.Players.LocalPlayer.Character
-            local hum = char and char:FindFirstChild("Humanoid")
-            if hum and hum.MoveDirection.Magnitude > 0 and Settings.WalkSpeed > 1 then
-                -- Nếu WalkSpeed bị game chặn, mình sẽ đẩy nhân vật đi bằng tọa độ (CFrame)
-                char:TranslateBy(hum.MoveDirection * (Settings.WalkSpeed / 5))
-            end
-        end)
+-- Vòng lặp cưỡng bức tốc độ bằng Velocity (Thay vì WalkSpeed)
+game:GetService("RunService").Stepped:Connect(function()
+    pcall(function()
+        local char = game.Players.LocalPlayer.Character
+        local hrp = char and char:FindFirstChild("HumanoidRootPart")
+        local hum = char and char:FindFirstChild("Humanoid")
+        
+        if hrp and hum and hum.MoveDirection.Magnitude > 0 then
+            hrp.Velocity = Vector3.new(hum.MoveDirection.X * Settings.SpeedValue, hrp.Velocity.Y, hum.MoveDirection.Z * Settings.SpeedValue)
+        end
     end)
 end)
 
 Rayfield:Notify({
-   Title = "System Injected",
-   Content = "If Speed doesn't work, try jumping!",
+   Title = "System Ready",
+   Content = "Speed is now using Velocity Bypass!",
    Duration = 5,
 })

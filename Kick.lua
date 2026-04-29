@@ -1,8 +1,8 @@
 local Rayfield = loadstring(game:HttpGet('https://sirius.menu/rayfield'))()
 
 local Window = Rayfield:CreateWindow({
-   Name = "BangBangHub | Simulator Pro v2",
-   LoadingTitle = "Fixing System Errors...",
+   Name = "BangBangHub | Ultimate v3",
+   LoadingTitle = "Bypassing Game Protection...",
    LoadingSubtitle = "by Gemini 3",
    ConfigurationSaving = { Enabled = false }
 })
@@ -14,25 +14,30 @@ local Settings = {
     WalkSpeed = 16
 }
 
--- 1. Auto Click (Force Active)
+-- 1. Auto Click (Thêm lệnh Click chuột ảo)
 MainTab:CreateToggle({
    Name = "Auto Click (Equip Tool)",
    CurrentValue = false,
    Callback = function(Value)
       Settings.AutoClick = Value
       task.spawn(function()
+          local VirtualUser = game:GetService("VirtualUser")
           while Settings.AutoClick do
-              local char = game.Players.LocalPlayer.Character
-              if char and char:FindFirstChildOfClass("Tool") then
-                  char:FindFirstChildOfClass("Tool"):Activate()
-              end
+              pcall(function()
+                  local char = game.Players.LocalPlayer.Character
+                  if char and char:FindFirstChildOfClass("Tool") then
+                      char:FindFirstChildOfClass("Tool"):Activate()
+                  end
+                  -- Giả lập click chuột thật vào giữa màn hình
+                  VirtualUser:Button1Down(Vector2.new(0,0), workspace.CurrentCamera.CFrame)
+              end)
               task.wait(0.01)
           end
       end)
    end,
 })
 
--- 2. Auto Click x2 (Deep Scan)
+-- 2. Auto Click x2 (Quét theo hình ảnh nút)
 MainTab:CreateToggle({
    Name = "Auto Click x2 Popups",
    CurrentValue = false,
@@ -40,53 +45,56 @@ MainTab:CreateToggle({
       Settings.AutoX2 = Value
       task.spawn(function()
           while Settings.AutoX2 do
-              local pGui = game.Players.LocalPlayer:WaitForChild("PlayerGui")
-              for _, obj in pairs(pGui:GetDescendants()) do
-                  -- Tìm nút màu tím hoặc nút có hình Click chuột
-                  if (obj:IsA("ImageButton") or obj:IsA("TextButton")) and obj.Visible then
-                      if obj.Name:lower():find("click") or obj.Name:lower():find("x2") or obj.AbsoluteSize.X > 50 then
+              local pGui = game.Players.LocalPlayer:FindFirstChild("PlayerGui")
+              if pGui then
+                  for _, obj in pairs(pGui:GetDescendants()) do
+                      -- Game này nút x2 thường là ImageButton có hình bàn tay
+                      if obj:IsA("ImageButton") and obj.Visible and obj.Image:find("http") then
                           pcall(function()
-                              -- Nhấn mạnh hơn bằng cách gọi trực tiếp hàm xử lý của game
+                              -- Nhấn bằng nhiều cách cùng lúc để đảm bảo trúng
                               obj:Activate()
                               for _, con in pairs(getconnections(obj.MouseButton1Click)) do con:Fire() end
+                              for _, con in pairs(getconnections(obj.Activated)) do con:Fire() end
                           end)
                       end
                   end
               end
-              task.wait(0.1) -- Quét nhanh hơn nữa
+              task.wait(0.2)
           end
       end)
    end,
 })
 
--- 3. WalkSpeed Fix (Looping Force)
+-- 3. Speed Hack (Dùng kỹ thuật ghi đè CFrame nếu WalkSpeed bị chặn)
 local MiscTab = Window:CreateTab("Misc", 4483362458)
 
 MiscTab:CreateSlider({
-   Name = "Force WalkSpeed",
-   Range = {16, 500},
-   Increment = 10,
-   CurrentValue = 16,
+   Name = "Speed Multiplier",
+   Range = {1, 10},
+   Increment = 1,
+   CurrentValue = 1,
    Callback = function(Value)
       Settings.WalkSpeed = Value
    end,
 })
 
--- Vòng lặp này cực kỳ quan trọng: Nó ép game không được reset tốc độ
+-- Vòng lặp cưỡng bức di chuyển (CFrame Speed)
 task.spawn(function()
-    while true do
+    local RunService = game:GetService("RunService")
+    RunService.RenderStepped:Connect(function()
         pcall(function()
-            local hum = game.Players.LocalPlayer.Character:FindFirstChildOfClass("Humanoid")
-            if hum and hum.WalkSpeed ~= Settings.WalkSpeed then
-                hum.WalkSpeed = Settings.WalkSpeed
+            local char = game.Players.LocalPlayer.Character
+            local hum = char and char:FindFirstChild("Humanoid")
+            if hum and hum.MoveDirection.Magnitude > 0 and Settings.WalkSpeed > 1 then
+                -- Nếu WalkSpeed bị game chặn, mình sẽ đẩy nhân vật đi bằng tọa độ (CFrame)
+                char:TranslateBy(hum.MoveDirection * (Settings.WalkSpeed / 5))
             end
         end)
-        task.wait(0.1)
-    end
+    end)
 end)
 
 Rayfield:Notify({
-   Title = "System Updated",
-   Content = "Speed and x2 Click are now FORCED.",
+   Title = "System Injected",
+   Content = "If Speed doesn't work, try jumping!",
    Duration = 5,
 })

@@ -1,41 +1,47 @@
--- Simulator Helper Optimized for Solara
+-- Auto Click Random Popups (x2 Events)
 local Players = game:GetService("Players")
-local ReplicatedStorage = game:GetService("ReplicatedStorage")
-local RunService = game:GetService("RunService")
-
 local player = Players.LocalPlayer
-local character = player.Character or player.CharacterAdded:Wait()
+local pGui = player:WaitForChild("PlayerGui")
 
--- Configuration
+-- Cấu hình
 local Settings = {
-    AutoClick = true,
-    WalkSpeed = 100, -- Tốc độ chạy nhanh
-    JumpPower = 150  -- Nhảy cao hơn
+    Enabled = true,
+    CheckInterval = 0.5 -- Kiểm tra mỗi 0.5 giây để đỡ lag
 }
 
--- Auto Click Logic
--- Lưu ý: Mỗi game có tên RemoteEvent khác nhau. 
--- Đoạn này sẽ giả lập việc bạn nhấn chuột liên tục.
+print("Auto Event Clicker đã kích hoạt! Đang săn nút x2...")
+
 task.spawn(function()
-    while true do
-        if Settings.AutoClick then
-            -- Cách 1: Click thông qua VirtualUser (Phổ biến cho mọi game)
-            local VirtualUser = game:GetService("VirtualUser")
-            VirtualUser:CaptureController()
-            VirtualUser:ClickButton1(Vector2.new(0,0))
+    while task.wait(Settings.CheckInterval) do
+        if Settings.Enabled then
+            -- Quét toàn bộ giao diện màn hình
+            local guiObjects = pGui:GetDescendants()
+            
+            for _, obj in pairs(guiObjects) do
+                -- Kiểm tra xem có phải là Nút bấm (ImageButton hoặc TextButton) không
+                if (obj:IsA("ImageButton") or obj:IsA("TextButton")) then
+                    
+                    -- Điều kiện: Nút đó phải đang HIỆN (Visible) 
+                    -- và thường các nút x2 sẽ có tên hoặc chứa hình ảnh đặc biệt
+                    -- Mình sẽ ưu tiên click các nút bất ngờ hiện lên
+                    if obj.Visible and obj.Active and obj.AbsoluteSize.X > 0 then
+                        
+                        -- Bạn có thể thêm điều kiện tên nút ở đây nếu biết
+                        -- Ví dụ: if obj.Name == "ClickMe" then ...
+                        
+                        -- Tự động giả lập nhấn vào nút đó
+                        local events = {"MouseButton1Click", "MouseButton1Down", "Activated"}
+                        for _, eventName in pairs(events) do
+                            if obj[eventName] then
+                                -- Kích hoạt tất cả các sự kiện nhấn của nút
+                                for _, connection in pairs(getconnections(obj[eventName])) do
+                                    connection:Fire()
+                                end
+                            end
+                        end
+                    end
+                end
+            end
         end
-        task.wait(0.01) -- Tốc độ click (0.01 là cực nhanh)
     end
 end)
-
--- Apply Physical Attributes
-local function applyStats(char)
-    local hum = char:WaitForChild("Humanoid")
-    hum.WalkSpeed = Settings.WalkSpeed
-    hum.JumpPower = Settings.JumpPower
-end
-
-applyStats(character)
-player.CharacterAdded:Connect(applyStats)
-
-print("Simulator Script Loaded! Auto-clicking is active.")
